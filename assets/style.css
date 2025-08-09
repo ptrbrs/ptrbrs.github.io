@@ -427,12 +427,14 @@ nav .navLang-buttons.active {
 .ps__sect .ps__cont .ps__heading h1,
 .ps__sect .ps__cont-first .ps__heading h1 {
   font-size: 5.2rem;
+  letter-spacing: -0.15rem;
   font-weight: 600 !important;
 }
 @media (orientation: portrait) {
   .ps__sect .ps__cont .ps__heading h1,
   .ps__sect .ps__cont-first .ps__heading h1 {
     font-size: 3.6rem;
+    letter-spacing: -0.1rem;
   }
 }
 .ps__sect .ps__cont .ps__heading p,
@@ -544,11 +546,13 @@ nav .navLang-buttons.active {
 }
 .showWork-firstCol h1 {
   font-size: 5.2rem;
+  letter-spacing: -0.15rem;
   font-weight: 600 !important;
 }
 @media (orientation: portrait) {
   .showWork-firstCol h1 {
     font-size: 3.6rem;
+    letter-spacing: -0.1rem;
   }
 }
 .showWork-firstCol p {
