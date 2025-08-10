@@ -163,6 +163,7 @@ header a {
   font-size: 2rem;
   font-weight: 800;
   border: thin solid var(--black);
+  visibility: hidden;
 }
 header div {
   position: relative;
@@ -171,6 +172,7 @@ header div {
   display: flex;
   justify-content: center;
   align-items: center;
+  visibility: hidden;
 }
 header .menu__button,
 header .back__button {

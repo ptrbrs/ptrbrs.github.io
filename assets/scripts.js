@@ -301,7 +301,29 @@ function mainHome() {
 			each: 0.1,
 			from: "start"
 		}
-	}, 0.5);
+	}, 0.5)
+	gsap.fromTo("header a", {
+		autoAlpha: 0,
+		yPercent: -50
+	}, {
+		autoAlpha: 1,
+		yPercent: 0,
+		duration: 0.25,
+		ease: "elastic.out(1,0.2)"
+	}, ">")
+	gsap.fromTo("header div", {
+		autoAlpha: 0,
+		xPercent: 100
+	}, {
+		autoAlpha: 1,
+		xPercent: 0,
+		duration: 0.25,
+		ease: "elastic.out(1,0.2)",
+		stagger: {
+			each: 0.05,
+			from: "start"
+		}
+	}, ">");
 }
 
 
