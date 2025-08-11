@@ -1,3 +1,5 @@
+console.clear();
+
 /* BASE LANGUAGE */
 async function getLanguageData(lang) {
 	switch (lang) {
@@ -23,6 +25,19 @@ function detectLanguage() {
 	if (regionLang === 'es-ES') return 'es';
 
 	return ['en', 'es'].includes(shortLang) ? shortLang : 'en';
+}
+function updateNavClass(lang) {
+	/* const nav = document.querySelector('.navPage');
+	if (!nav) return;
+	nav.classList.remove('lang-en', 'lang-es');
+	nav.classList.add(`lang-${lang}`); */
+	const navPages = document.querySelectorAll('.navPage');
+    if (!navPages.length) return;
+
+    navPages.forEach(nav => {
+        nav.classList.remove('lang-en', 'lang-es');
+        nav.classList.add(`lang-${lang}`);
+    });
 }
 async function langswitch() {
 	const lang = detectLanguage();
@@ -59,6 +74,14 @@ async function langswitch() {
 	applyLanguage(lng.default);
 	updateActiveButton(lang);
 	updateLinksForLanguage(lang);
+	updateNavClass(lang);
+
+	document.querySelectorAll('.navLang-buttons').forEach(btn => {
+		btn.addEventListener('click', () => {
+			const lang = btn.dataset.lang;
+			updateNavClass(lang);
+		});
+	});
 }
 
 
@@ -199,16 +222,10 @@ async function loadAboutContent() {
 		}
 	});
 }
-document.addEventListener('DOMContentLoaded', () => {
-	loadAboutContent();
-});
+loadAboutContent();
 
 
-console.clear();
 gsap.registerPlugin(CustomEase, ScrollTrigger, SplitText, MorphSVGPlugin, ScrollToPlugin);
-gsap.config({
-	//nullTargetWarn: false,
-});
 
 
 CustomEase.create("menuIcon", "M0,0 C0,0 0.02,0.098 0.128,0.098 0.242,0.098 0.13,-0.1 0.3,-0.1 0.5,-0.1 0.49,1.1 0.7,1.1 0.856,1.1 0.778,0.896 0.882,0.896 0.976,0.896 1,1 1,1");
@@ -519,32 +536,23 @@ function menuAnimation() {
 		// SLIDE OUT (mainActual)
 		switchTl.to(mainActual, {
 			autoAlpha: 0,
-			//y: -100,
-			height: "0dvh",
-			top: "0",
-			duration: 0.5,
-			ease: "power2.in"
+			yPercent: -50,
+			duration: 0.35,
+			ease: "back.inOut(1.8)"
 		});
 
 		// SLIDE IN (mainNext)
 		switchTl.set(mainNext, {
-			visibility: "visible",
-			//y: 100
+			visibility: "visible"
 		})
 			.fromTo(mainNext, {
 				autoAlpha: 0,
-				//y: 100,
-				height: "0dvh",
-				top: "100%",
-				bottom: "0"
+				yPercent: 50
 			}, {
 				autoAlpha: 1,
-				//y: 0,
-				height: "100dvh",
-				bottom: "0",
-				top: "0",
-				duration: 0.5,
-				ease: "power2.out"
+				yPercent: 0,
+				duration: 0.35,
+				ease: "back.inOut(1.8)"
 			});
 	}
 
@@ -628,7 +636,7 @@ function showWorks() {
 							each: 0.1,
 							from: "start"
 						},
-						ease: "power1.inOut"
+						ease: "back.inOut(1.8)"
 					})
 					.fromTo(".menu__button", {
 						autoAlpha: 1
@@ -641,7 +649,7 @@ function showWorks() {
 						autoAlpha: 0
 					}, {
 						autoAlpha: 1,
-						ease: "power2.out"
+						ease: "power2"
 					})
 					.fromTo(showContents, {
 						autoAlpha: 0,
@@ -653,7 +661,7 @@ function showWorks() {
 							each: 0.1,
 							from: "start"
 						},
-						ease: "power1.inOut"
+						ease: "back.inOut(1.8)"
 					}, "<")
 					.fromTo(backButtons, {
 						autoAlpha: 0,
@@ -697,11 +705,11 @@ function showWorks() {
 						each: 0.1,
 						from: "start"
 					},
-					ease: "power1.inOut"
+					ease: "back.inOut(1.8)"
 				})
 				.to(showContainer, {
 					autoAlpha: 0,
-					ease: "power1.inOut"
+					ease: "power2"
 				})
 				.fromTo([heading, image], {
 					autoAlpha: 0,
@@ -713,7 +721,7 @@ function showWorks() {
 						each: 0.1,
 						from: "start"
 					},
-					ease: "power1.inOut"
+					ease: "back.inOut(1.8)"
 				}, "<")
 				.fromTo(backButtons, {
 					autoAlpha: 1,
