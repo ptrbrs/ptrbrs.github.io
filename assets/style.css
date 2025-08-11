@@ -684,14 +684,10 @@ nav .navLang-buttons.active {
 #main__section-about section .contentDetails img {
   width: 100%;
 }
-#main__section-about section .contentDetails h1,
-#main__section-about section .contentDetails h2,
-#main__section-about section .contentDetails h3,
-#main__section-about section .contentDetails h4,
-#main__section-about section .contentDetails h5,
-#main__section-about section .contentDetails h6 {
+#main__section-about section .contentDetails h1 {
+  font-size: 2rem;
   font-weight: 800;
-  letter-spacing: -0.1rem;
+  letter-spacing: -0.05rem;
   margin: 1rem 0;
 }
 #main__section-about section .contentDetails p {
