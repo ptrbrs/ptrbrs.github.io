@@ -518,7 +518,7 @@ main {
   font-family: "Google Sans Code", monospace;
   font-optical-sizing: auto;
   font-style: normal;
-  font-weight: 100;
+  font-weight: 200;
   letter-spacing: -0.035rem;
 }
 .works_img,
@@ -643,7 +643,7 @@ main {
   font-family: "Google Sans Code", monospace;
   font-optical-sizing: auto;
   font-style: normal;
-  font-weight: 100;
+  font-weight: 200;
   font-weight: 100;
   line-height: 1.4;
 }
@@ -693,7 +693,7 @@ main {
   font-family: "Google Sans Code", monospace;
   font-optical-sizing: auto;
   font-style: normal;
-  font-weight: 100;
+  font-weight: 200;
   word-wrap: break-word;
   overflow-wrap: break-word;
   text-align: justify;
@@ -791,7 +791,7 @@ main {
   font-family: "Google Sans Code", monospace;
   font-optical-sizing: auto;
   font-style: normal;
-  font-weight: 100;
+  font-weight: 200;
   color: var(--black);
   font-size: 0.75rem;
   line-height: normal;
