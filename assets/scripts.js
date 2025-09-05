@@ -4,13 +4,19 @@ async function switchLang() {
 	const urlParams = new URLSearchParams(window.location.search);
 	let lang = urlParams.get("lang") || localStorage.getItem("lang");
 
+	if (lang === "en") lang = "en-us";
+
 	if (!lang) {
 		const browserLang = navigator.language || navigator.languages[0];
 		const shortLang = browserLang.split("-")[0];
-		const regionLang = browserLang;
-		lang = regionLang.startsWith("es") ? "es" : (["en", "es"].includes(shortLang) ? shortLang : "en");
+		const regionLang = browserLang.toLowerCase();
+		lang = regionLang.startsWith("es")
+			? "es"
+			: (["en", "es"].includes(shortLang) ? (shortLang === "en" ? "en-us" : "es") : "en-us");
 	}
+
 	localStorage.setItem("lang", lang);
+	document.documentElement.setAttribute("lang", lang);
 
 	const db = (await import(`./lang/${lang}.js`)).default;
 
@@ -37,10 +43,19 @@ async function switchLang() {
 		root.querySelectorAll("[data-content]").forEach(el => {
 			const key = el.getAttribute("data-content");
 			if (key && data[key] !== undefined) {
-				if (el.tagName === "IMG") {
+				/* if (el.tagName === "IMG") {
 					el.src = data[key];
 				} else {
 					el.innerHTML = data[key];
+				} */
+				if (el.tagName === "IMG") {
+					el.src = data[key];
+				} else {
+					if (el.classList.contains("show_works-txt-lead1")) {
+						el.innerHTML = data[key].toLowerCase();
+					} else {
+						el.innerHTML = data[key];
+					}
 				}
 			}
 		});
@@ -55,8 +70,7 @@ async function switchLang() {
 					const imgUrl = data[`image${i}`];
 					const caption = data[`image${i}capt`] || "";
 
-					const wrap = document.createElement("div");
-					wrap.className = "extraImgWrap";
+					const wrap = document.createElement("figure");
 
 					const img = document.createElement("img");
 					img.src = imgUrl;
@@ -65,7 +79,7 @@ async function switchLang() {
 					wrap.appendChild(img);
 
 					if (caption) {
-						const cap = document.createElement("p");
+						const cap = document.createElement("figcaption");
 						cap.textContent = caption;
 						wrap.appendChild(cap);
 					}
@@ -100,7 +114,6 @@ async function switchLang() {
 		if (k && db[k]) fillContent(node, db[k]);
 	});
 
-
 	document.querySelectorAll("[data-lang]").forEach(el => {
 		const key = el.getAttribute("data-lang");
 		if (db.ui[key]) el.innerHTML = db.ui[key];
@@ -133,7 +146,7 @@ async function switchLang() {
 	const elBtnLang = document.getElementById("navLangBTN");
 	if (elBtnLang) {
 		elBtnLang.addEventListener("click", () => {
-			const newLang = lang === "en" ? "es" : "en";
+			const newLang = lang === "en-us" ? "es" : "en-us";
 			localStorage.setItem("lang", newLang);
 			updateUrlLang(newLang);
 		});
@@ -168,9 +181,10 @@ function decoLink() {
 				width: '100%',
 				height: '100%',
 				top: '0',
-				left: '0',
+				right: '0',
 				bottom: '0',
-				color: 'var(--black)',
+				left: '0',
+				color: 'var(--green)',
 				clipPath: 'polygon(0 0, 0 0, 0% 100%, 0 100%)',
 				transition: 'clip-path 0.25s ease-in-out',
 				pointerEvents: 'none'
@@ -204,203 +218,76 @@ function decoLink() {
 	});
 }
 
-async function switchMain() {
-	await document.fonts.ready;
-
+// --- GLOBAL STATE ---
+let currentSection = null, sectionMap = {}, switchSection = null, pendingTargetSection = null, menuIconTl = null, activeContent = null;
+async function initMenu() {
 	const menuInner = document.querySelector(".nav_items");
-	const menuBTN = document.querySelector(".menu_button");
+	const menuBTN = document.querySelector(".nav_button");
 
-	let currentSection = document.querySelector(".main__section-home");
-	if (currentSection) currentSection.style.display = "flex";
+	// --- MENU ICON ANIMATION ---
+	menuIconTl = gsap.timeline({ paused: true, reversed: true })
+		.to("#rightUp", { morphSVG: "#rightUpE", ease: "elastic.out(1.25,0.75)" })
+		.to("#rightDown", { morphSVG: "#rightDownE", ease: "elastic.out(1.25,0.75)" }, 0)
+		.to("#leftUp", { morphSVG: "#leftUpE", ease: "elastic.out(1.25,0.75)" }, 0)
+		.to("#leftDown", { morphSVG: "#leftDownE", ease: "elastic.out(1.25,0.75)" }, 0);
 
-	const sectionMap = {
-		menu_home: ".main__section-home",
-		menu_works: ".main__section-works",
-		menu_behind: ".main__section-behind",
-		menu_about: ".main__section-about",
-	};
-
-	const splitCache = {};
-	Object.values(sectionMap).forEach((selector) => {
-		const section = document.querySelector(selector);
-		const span = section?.querySelector(".section_upper div span");
-		if (span) splitCache[selector] = new SplitText(span, { type: "words, chars" });
-	});
-
-	let menuIconTl = null, menuTl = null, pendingTargetSection = null;
-
-	// --- PORTRAIT MENU ANIMATION ---
+	// --- PORTRAIT MENU TIMELINE ---
+	let menuTl = null;
 	if (window.matchMedia("(orientation: portrait) and (max-width: 767px)").matches) {
-		menuIconTl = gsap.timeline({ paused: true, reversed: true })
-			.to(".rightUp-line", { morphSVG: ".rightUpE", duration: 0.25, ease: "menuIcon" }, 0)
-			.to(".rightDown-line", { morphSVG: ".rightDownE", duration: 0.25, ease: "menuIcon" }, 0)
-			.to(".leftUp", { morphSVG: ".leftUpE", duration: 0.25, ease: "menuIcon" }, 0)
-			.to(".leftDown", { morphSVG: ".leftDownE", duration: 0.25, ease: "menuIcon" }, 0);
-
-		menuTl = gsap.timeline({
-			paused: true,
-			reversed: true,
-			onReverseComplete: () => {
-				if (pendingTargetSection && pendingTargetSection !== currentSection) {
-					switchSection(pendingTargetSection);
-				}
-			}
-		})
+		menuTl = gsap.timeline({ paused: true, reversed: true })
 			.set(menuInner, { display: "flex" })
-			.to(menuInner, { width: "100vw", ease: "elastic.out(1,0.1)" })
+			.to(menuInner, { width: "100vw", ease: "elastic.out(1.75,0.5)" })
 			.fromTo(".nav_items ul li",
 				{ x: 200, opacity: 0 },
 				{ x: 0, opacity: 1, duration: 0.2, stagger: 0.1 },
 				"<0.3"
 			);
+	}
 
-		menuBTN.addEventListener("click", () => {
-			if (menuIconTl.isActive() || menuTl.isActive()) return;
-			menuIconTl.reversed() ? menuIconTl.play() : menuIconTl.reverse();
+	// --- MENU BUTTON HANDLER ---
+	menuBTN.addEventListener("click", () => {
+		if (activeContent && activeContent.__tl) {
+			const backEvent = document.querySelector(".show_works-wrapper, .show_behind-wrapper");
+			backEvent.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+			activeContent.__tl.reverse();
+			return;
+		}
+
+		if (menuIconTl.isActive() || (menuTl && menuTl.isActive())) return;
+
+		if (menuIconTl.reversed()) {
+			menuIconTl.play();
+		} else {
+			menuIconTl.reverse();
+		}
+
+		if (menuTl) {
 			menuTl.reversed() ? menuTl.play() : menuTl.reverse();
-		});
-	}
-
-	async function switchSection(targetSection) {
-		if (!targetSection || targetSection === currentSection) return;
-
-		const mainActual = currentSection;
-		const mainNext = targetSection;
-
-		const selectorOut = Object.values(sectionMap).find(sel => document.querySelector(sel) === mainActual);
-		const selectorIn = Object.values(sectionMap).find(sel => document.querySelector(sel) === mainNext);
-
-		if (mainActual?.classList.contains("main__section-about")) {
-			document.body.style.overflowY = "hidden";
 		}
-		if (mainNext?.classList.contains("main__section-about")) {
-			document.body.style.overflowY = "auto";
-		}
+	});
 
-		// --- SPLITTEXT CACHE REFRESH ---
-		let splittedOut = selectorOut ? splitCache[selectorOut] : null;
-		if (splittedOut) {
-			splittedOut.revert();
-			splittedOut = new SplitText(mainActual.querySelector(".section_upper div span"), { type: "words, chars" });
-			splitCache[selectorOut] = splittedOut;
-		}
-
-		let splittedIn = selectorIn ? splitCache[selectorIn] : null;
-		if (splittedIn) {
-			splittedIn.revert();
-			splittedIn = new SplitText(mainNext.querySelector(".section_upper div span"), { type: "words, chars" });
-			splitCache[selectorIn] = splittedIn;
-		}
-
-		// --- OUT ANIMATIONS ---
-		// --- SLIDER OUT ---
-		const outPrefix = mainActual.classList.contains("main__section-works") ? "works" : mainActual.classList.contains("main__section-behind") ? "behind" : null;
-		if (outPrefix && sliderInstances[outPrefix]) {
-			await sliderInstances[outPrefix].slideOut();
-		}
-
-		// --- SPLITTED OUT ---
-		if (splittedOut?.chars?.length) {
-			await new Promise(r => gsap.to(splittedOut.chars, {
-				scaleY: 0,
-				transformOrigin: "center bottom",
-				stagger: { each: 0.025, from: "random" },
-				ease: "power4.in",
-				onComplete: r
-			}));
-		}
-
-		// --- MAIN OUT ---
-		await gsap.to(mainActual.querySelector(".section_upper"), { height: "100dvh", duration: 0.35, ease: "power2.in" });
-
-		const aboutOUT = mainActual.classList.contains("main__section-about") ? "about" : null;
-		if (aboutOUT) {
-			gsap.set(document.querySelectorAll(".about_section div"), { clearProps: "opacity,visibility" });
-		}
-
-		mainActual.style.display = "none";
-
-
-		// --- IN ANIMATIONS ---
-		if (splittedIn?.chars?.length) {
-			gsap.set(splittedIn.chars, { scaleY: 0, transformOrigin: "center bottom" });
-		}
-
-		// --- MAIN IN ---
-		mainNext.style.display = "flex";
-		mainNext.style.removeProperty("visibility");
-		mainNext.style.removeProperty("opacity");
-
-		const wrappers = document.querySelectorAll(".swiper-wrapper, .swiper-slide");
-		wrappers.forEach(w => gsap.set(w, { clearProps: "opacity,visibility" }));
-
-		const homeIN = mainNext.classList.contains("main__section-home");
-		const otherIN = mainNext.classList.contains("main__section-works") || mainNext.classList.contains("main__section-behind") || mainNext.classList.contains("main__section-about");
-
-		if (homeIN) {
-			await gsap.fromTo(mainNext.querySelector(".section_upper"),
-				{ height: "100dvh" },
-				{ height: "0vh", duration: 0.5, ease: "power2.out" }
-			);
-		}
-		if (otherIN) {
-			if (window.matchMedia("(orientation: portrait)").matches) {
-				await gsap.fromTo(mainNext.querySelector(".section_upper"),
-					{ height: "100dvh" },
-					{ height: "20dvh", duration: 0.25, ease: "power2.out" }
-				);
-			} else {
-				await gsap.fromTo(mainNext.querySelector(".section_upper"),
-					{ height: "100dvh" },
-					{ height: "30dvh", duration: 0.25, ease: "power2.out" }
-				);
+	// --- HELPER ---
+	function waitForMenuClose() {
+		return new Promise(resolve => {
+			if (!menuTl || menuTl.reversed()) {
+				resolve();
+				return;
 			}
-		}
-
-		// --- SPLITTED IN ---
-		if (splittedIn?.chars?.length) {
-			await new Promise(r => gsap.to(splittedIn.chars, {
-				scaleY: 1,
-				transformOrigin: "center bottom",
-				stagger: { each: 0.025, from: "random" },
-				ease: "power4.out",
-				onComplete: r
-			}));
-		}
-
-		const aboutIN = mainNext.classList.contains("main__section-about") ? "about" : null;
-		if (aboutIN) {
-			aboutContent();
-		}
-
-		// --- SLIDER IN ---
-		const inPrefix = mainNext.classList.contains("main__section-works") ? "works" : mainNext.classList.contains("main__section-behind") ? "behind" : null;
-		if (inPrefix) {
-			const api = sliderInstances[inPrefix] || initSlider(inPrefix);
-			if (api) {
-				api.refresh();
-				await api.slideIn();
+			menuTl.eventCallback("onReverseComplete", () => {
+				menuTl.eventCallback("onReverseComplete", null);
+				resolve();
+			});
+			if (!menuTl.reversed()) {
+				menuIconTl.reverse();
+				menuTl.reverse();
 			}
-		}
-
-		currentSection = mainNext;
-		pendingTargetSection = null;
-	}
-
-	function setActiveDeco(activeLink) {
-		document.querySelectorAll('.decoLink').forEach(link => {
-			link.style.color = '';
 		});
-
-		if (activeLink) {
-			activeLink.style.color = 'var(--black)';
-		}
 	}
 
 	// --- COMMON MENU LINKS ---
 	const links = document.querySelectorAll("[data-lang^='menu_']");
 	links.forEach(link => {
-		link.addEventListener("click", function () {
+		link.addEventListener("click", async function () {
 			const langKey = link.getAttribute("data-lang");
 			const selector = sectionMap[langKey];
 			const targetSection = document.querySelector(selector);
@@ -415,7 +302,11 @@ async function switchMain() {
 
 			if (window.matchMedia('(orientation: portrait) and (max-width: 767px)').matches) {
 				pendingTargetSection = targetSection;
-				menuBTN.click();
+				await waitForMenuClose();
+				if (pendingTargetSection) {
+					switchSection(pendingTargetSection);
+					pendingTargetSection = null;
+				}
 			} else {
 				switchSection(targetSection);
 			}
@@ -424,7 +315,7 @@ async function switchMain() {
 
 	// --- LOGO CLICK HANDLER ---
 	document.querySelectorAll(".header_logo a").forEach(logo => {
-		logo.addEventListener("click", e => {
+		logo.addEventListener("click", async e => {
 			e.preventDefault();
 			const selector = sectionMap["menu_home"];
 			const targetSection = document.querySelector(selector);
@@ -433,10 +324,151 @@ async function switchMain() {
 
 			setActiveDeco(null);
 
-			switchSection(targetSection);
-
+			if (window.matchMedia('(orientation: portrait) and (max-width: 767px)').matches) {
+				pendingTargetSection = targetSection;
+				await waitForMenuClose();
+				if (pendingTargetSection) {
+					switchSection(pendingTargetSection);
+					pendingTargetSection = null;
+				}
+			} else {
+				switchSection(targetSection);
+			}
 		});
 	});
+
+	function setActiveDeco(activeLink) {
+		document.querySelectorAll('.decoLink').forEach(link => {
+			link.style.color = '';
+		});
+
+		if (activeLink) {
+			activeLink.style.color = 'var(--green)';
+		}
+	}
+}
+
+async function switchMain() {
+	await document.fonts.ready;
+
+	currentSection = document.querySelector(".main__section-home");
+	if (currentSection) currentSection.style.display = "flex";
+
+	sectionMap = {
+		menu_home: ".main__section-home",
+		menu_works: ".main__section-works",
+		menu_behind: ".main__section-behind",
+		menu_about: ".main__section-about",
+	};
+
+	const splitCache = {};
+	Object.values(sectionMap).forEach((selector) => {
+		const section = document.querySelector(selector);
+		const span = section?.querySelector(".section_upper div span");
+		if (span) splitCache[selector] = new SplitText(span, { type: "words, chars" });
+	});
+
+	switchSection = async function (targetSection) {
+		if (!targetSection || targetSection === currentSection) return;
+
+		const mainActual = currentSection;
+		const mainNext = targetSection;
+
+		// scroll lock
+		if (mainActual?.classList.contains("main__section-about")) {
+			document.body.style.overflowY = "hidden";
+		}
+		if (mainNext?.classList.contains("main__section-about")) {
+			document.body.style.overflowY = "auto";
+		}
+
+		// --- SPLITTEXT CACHE REFRESH ---
+		const selectorOut = Object.values(sectionMap).find(sel => document.querySelector(sel) === mainActual);
+		const selectorIn = Object.values(sectionMap).find(sel => document.querySelector(sel) === mainNext);
+
+		let splittedOut = selectorOut ? splitCache[selectorOut] : null;
+		if (splittedOut) {
+			splittedOut.revert();
+			splittedOut = new SplitText(mainActual.querySelector(".section_upper div span"), { type: "words, chars" });
+			splitCache[selectorOut] = splittedOut;
+		}
+		let splittedIn = selectorIn ? splitCache[selectorIn] : null;
+		if (splittedIn) {
+			splittedIn.revert();
+			splittedIn = new SplitText(mainNext.querySelector(".section_upper div span"), { type: "words, chars" });
+			splitCache[selectorIn] = splittedIn;
+		}
+
+		// --- OUT ANIMATIONS ---
+		const outPrefix = mainActual.classList.contains("main__section-works") ? "works" :
+			mainActual.classList.contains("main__section-behind") ? "behind" : null;
+		if (outPrefix && sliderInstances[outPrefix]) {
+			await sliderInstances[outPrefix].slideOut();
+		}
+		if (splittedOut?.chars?.length) {
+			await new Promise(r => gsap.to(splittedOut.chars, {
+				scaleY: 0,
+				transformOrigin: "center bottom",
+				stagger: { each: 0.025, from: "random" },
+				ease: "power4.in",
+				onComplete: r
+			}));
+		}
+		await gsap.to(mainActual.querySelector(".section_upper"), { height: "100dvh", duration: 0.35, ease: "power2.in" });
+		/* if (mainActual.classList.contains("main__section-about")) {
+			gsap.set(document.querySelectorAll(".about_section div"), { clearProps: "opacity,visibility" });
+		} */
+		mainActual.style.display = "none";
+
+		// --- IN ANIMATIONS ---
+		if (splittedIn?.chars?.length) {
+			gsap.set(splittedIn.chars, { scaleY: 0, transformOrigin: "center bottom" });
+		}
+		mainNext.style.display = "flex";
+		mainNext.style.removeProperty("visibility");
+		mainNext.style.removeProperty("opacity");
+
+		const wrappers = document.querySelectorAll(".swiper-wrapper, .swiper-slide");
+		wrappers.forEach(w => gsap.set(w, { clearProps: "opacity,visibility" }));
+
+		if (mainNext.classList.contains("main__section-home")) {
+			await gsap.fromTo(mainNext.querySelector(".section_upper"),
+				{ height: "100dvh" },
+				{ height: "0vh", duration: 0.5, ease: "power2.out" }
+			);
+		} else {
+			const targetHeight = window.matchMedia("(orientation: portrait)").matches ? "20dvh" : "30dvh";
+			await gsap.fromTo(mainNext.querySelector(".section_upper"),
+				{ height: "100dvh" },
+				{ height: targetHeight, duration: 0.25, ease: "power2.out" }
+			);
+		}
+
+		if (splittedIn?.chars?.length) {
+			await new Promise(r => gsap.to(splittedIn.chars, {
+				scaleY: 1,
+				transformOrigin: "center bottom",
+				stagger: { each: 0.025, from: "random" },
+				ease: "power4.out",
+				onComplete: r
+			}));
+		}
+		/* if (mainNext.classList.contains("main__section-about")) {
+			aboutContent();
+		} */
+
+		const inPrefix = mainNext.classList.contains("main__section-works") ? "works" :
+			mainNext.classList.contains("main__section-behind") ? "behind" : null;
+		if (inPrefix) {
+			const api = sliderInstances[inPrefix] || initSlider(inPrefix);
+			if (api) {
+				api.refresh();
+				await api.slideIn();
+			}
+		}
+
+		currentSection = mainNext;
+	};
 
 	window.addEventListener("resize", () => {
 		const active =
@@ -444,11 +476,6 @@ async function switchMain() {
 				currentSection?.classList.contains("main__section-behind") ? "behind" : null;
 		if (active && sliderInstances[active]) sliderInstances[active].refresh();
 	});
-
-	function setActiveDeco(activeLink) {
-		document.querySelectorAll(".decoLink").forEach(link => link.style.color = "");
-		if (activeLink) activeLink.style.color = "var(--black)";
-	}
 }
 
 const sliderInstances = {};
@@ -628,7 +655,6 @@ function initSlider(prefix) {
 			if (!actives.length) return resolve();
 
 			gsap.set(allSlides, { autoAlpha: 1 });
-			//gsap.set(actives, { xPercent: 120, autoAlpha: 0 });
 
 			gsap.fromTo(actives, {
 				xPercent: 120,
@@ -698,7 +724,7 @@ function initSlider(prefix) {
 }
 
 let contentTl = null;
-function showContent(triggerEl) {
+async function showContent(triggerEl) {
 	const slide = triggerEl?.closest?.("[data-page]") || triggerEl;
 	if (!slide) return;
 
@@ -726,6 +752,230 @@ function showContent(triggerEl) {
 		if (obj) window.langAPI.fillContent(container, obj);
 	}
 
+	function startSvgStrokeWatcher() {
+		const btn = document.querySelector(".nav_button");
+		const svg = btn?.querySelector("svg");
+		if (!btn || !svg) return { stop() { } };
+
+		const w = 50, h = 50;
+		const canvas = document.createElement("canvas");
+		canvas.width = w; canvas.height = h;
+		const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+		const LOW = 120;
+		const HIGH = 150;
+		let running = true;
+		let lastTs = 0;
+		let decided = false;
+		let current = null;
+
+		const lum = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
+
+		function parseRGBA(str) {
+			if (!str) return null;
+			if (str.startsWith("rgb")) {
+				const nums = str.match(/[\d.]+/g)?.map(Number);
+				if (!nums) return null;
+				const [r, g, b, a = 1] = nums;
+				return { r, g, b, a };
+			}
+			if (str.startsWith("#")) {
+				let hex = str.slice(1);
+				if (hex.length === 3) hex = hex.split("").map(ch => ch + ch).join("");
+				if (hex.length === 6) {
+					const r = parseInt(hex.slice(0, 2), 16);
+					const g = parseInt(hex.slice(2, 4), 16);
+					const b = parseInt(hex.slice(4, 6), 16);
+					return { r, g, b, a: 1 };
+				}
+			}
+			if (str === "transparent") return { r: 0, g: 0, b: 0, a: 0 };
+			return null;
+		}
+
+		function sampleAvgLumaFromImg(img, sampleRect) {
+			const rect = img.getBoundingClientRect();
+			if (rect.width <= 0 || rect.height <= 0 || img.naturalWidth === 0) return null;
+
+			const scaleX = img.naturalWidth / rect.width;
+			const scaleY = img.naturalHeight / rect.height;
+
+			const vx1 = Math.max(sampleRect.left, rect.left);
+			const vy1 = Math.max(sampleRect.top, rect.top);
+			const vx2 = Math.min(sampleRect.right, rect.right);
+			const vy2 = Math.min(sampleRect.bottom, rect.bottom);
+			if (vx2 <= vx1 || vy2 <= vy1) return null;
+
+			const sx = (vx1 - rect.left) * scaleX;
+			const sy = (vy1 - rect.top) * scaleY;
+			const sw = (vx2 - vx1) * scaleX;
+			const sh = (vy2 - vy1) * scaleY;
+
+			try {
+				ctx.clearRect(0, 0, w, h);
+				ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+				const data = ctx.getImageData(0, 0, w, h).data;
+				let sum = 0;
+				for (let i = 0; i < data.length; i += 4) sum += lum(data[i], data[i + 1], data[i + 2]);
+				return sum / (w * h);
+			} catch {
+				return null;
+			}
+		}
+
+		const isUnderBtn = (el) => el && (el === btn || btn.contains(el));
+		const isInvisible = (el) => {
+			const cs = getComputedStyle(el);
+			return cs.visibility === "hidden" || cs.display === "none" || parseFloat(cs.opacity) < 0.05;
+		};
+
+		function pickAvgLuma() {
+			const sample = {
+				left: window.innerWidth - w,
+				top: 0,
+				right: window.innerWidth,
+				bottom: h,
+				cx: window.innerWidth - w / 2,
+				cy: h / 2
+			};
+
+			const prevPE = btn.style.pointerEvents;
+			btn.style.pointerEvents = "none";
+			const stack = document.elementsFromPoint(sample.cx, sample.cy) || [];
+			btn.style.pointerEvents = prevPE;
+
+			for (const el of stack) {
+				if (isUnderBtn(el) || el.tagName === "SVG" || el.tagName === "PATH" || isInvisible(el)) continue;
+
+				if (el.tagName === "IMG" && el.complete) {
+					const avg = sampleAvgLumaFromImg(el, sample);
+					if (avg != null) return avg;
+				}
+
+				const bg = getComputedStyle(el).backgroundColor;
+				const rgba = parseRGBA(bg);
+				if (rgba && rgba.a > 0) {
+					return lum(rgba.r, rgba.g, rgba.b);
+				}
+
+			}
+
+			const bodyRGBA = parseRGBA(getComputedStyle(document.body).backgroundColor);
+			if (bodyRGBA && bodyRGBA.a > 0) return lum(bodyRGBA.r, bodyRGBA.g, bodyRGBA.b);
+
+			return null;
+		}
+
+		function applyDecision(avg) {
+			if (avg == null) return;
+			if (!decided) {
+				current = (avg > 135) ? "black" : "white";
+				svg.style.stroke = current;
+				decided = true;
+				return;
+			}
+			if (current === "white" && avg > HIGH) {
+				current = "black";
+				svg.style.stroke = "black";
+			} else if (current === "black" && avg < LOW) {
+				current = "white";
+				svg.style.stroke = "white";
+			}
+		}
+
+		function loop(ts) {
+			if (!running) return;
+			if (ts - lastTs < 70) { requestAnimationFrame(loop); return; }
+			lastTs = ts;
+
+			const avg = pickAvgLuma();
+			applyDecision(avg);
+
+			requestAnimationFrame(loop);
+		}
+
+		requestAnimationFrame(loop);
+		return { stop() { running = false; } };
+	}
+
+	function initFooterNavigation(container) {
+		const backEvent = container.querySelector(".show_works-wrapper, .show_behind-wrapper");
+		if (!backEvent) return;
+
+		const btnTop = container.querySelector(".show_works-footer-top");
+		const btnPrev = container.querySelector(".show_works-footer-prev");
+		const btnNext = container.querySelector(".show_works-footer-next");
+
+		// --- TOP BUTTON ---
+		if (btnTop) {
+			btnTop.addEventListener("click", () => {
+				backEvent.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+			});
+		}
+
+		// --- PREV/NEXT ---
+		function getAllPages(prefix) {
+			return Array.from(document.querySelectorAll(`[data-page^="${prefix}"]`))
+				.map(el => el.getAttribute("data-page"))
+				.filter(Boolean);
+		}
+
+		function navigate(offset) {
+			const current = container.getAttribute("data-page");
+			if (!current) return;
+
+			const prefix = current.startsWith("works") ? "works" : current.startsWith("behind") ? "behind" : null;
+			if (!prefix) return;
+
+			const pages = getAllPages(prefix);
+			if (!pages.length) return;
+
+			const idx = pages.indexOf(current);
+			if (idx === -1) return;
+
+			let newIdx = (idx + offset + pages.length) % pages.length;
+			const newPage = pages[newIdx];
+			if (!newPage) return;
+
+			// 👉 DOM elem készítése "fakeSlide" helyett
+			const fakeSlide = document.createElement("div");
+			fakeSlide.setAttribute("data-page", newPage);
+
+			// --- IN ANIMATION (new page) ---
+			gsap.set(container, { autoAlpha: 0, x: 50 });
+			showContent(fakeSlide);
+			gsap.to(container, { autoAlpha: 1, x: 0, duration: 0.35, ease: "power2.out" });
+		}
+
+
+		function scrollThenNavigate(offset) {
+			function onScroll() {
+				if (backEvent.scrollTop === 0) {
+					backEvent.removeEventListener("scroll", onScroll);
+
+					// --- OUT ANIMATION (current) ---
+					gsap.to(container, {
+						autoAlpha: 0,
+						x: -50,
+						duration: 0.35,
+						ease: "power2.in",
+						onComplete: () => navigate(offset)
+					});
+				}
+			}
+			backEvent.addEventListener("scroll", onScroll);
+			backEvent.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+		}
+
+		if (btnPrev) {
+			btnPrev.addEventListener("click", () => scrollThenNavigate(-1));
+		}
+
+		if (btnNext) {
+			btnNext.addEventListener("click", () => scrollThenNavigate(1));
+		}
+	}
+
 	const rect = slide.getBoundingClientRect();
 	const vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
 
@@ -737,10 +987,8 @@ function showContent(triggerEl) {
 		top: rect.top + "px",
 		width: rect.width + "px",
 		height: rect.height + "px",
-		opacity: 1,
-		visibility: "visible",
-		margin: 0,
 		zIndex: 99999,
+		margin: 0,
 		pointerEvents: "none",
 		transform: "translateZ(0)"
 	});
@@ -749,14 +997,11 @@ function showContent(triggerEl) {
 		img.style.width = "100%";
 		img.style.height = "100%";
 		img.style.objectFit = "cover";
-		img.style.opacity = "1";
-		img.style.visibility = "visible";
 		img.style.filter = "none";
 	});
 
 	document.body.appendChild(fly);
 
-	const backBtn = container.querySelector(".backButton");
 	const backEvent = container.querySelector(".show_works-wrapper, .show_behind-wrapper");
 	const handleEsc = (e) => {
 		if (e.key === "Escape") {
@@ -778,19 +1023,41 @@ function showContent(triggerEl) {
 	const tl = gsap.timeline({
 		defaults: { ease: "power3.inOut" },
 		onStart: () => {
+			if (menuIconTl.reversed()) menuIconTl.play();
+			activeContent = container;
+
+			gsap.to(".nav_items ul li", { autoAlpha: 0, xPercent: 500, duration: 0.25, ease: "power4.in", stagger: { each: 0.1, start: "end" } });
+			if (window.matchMedia("(orientation: portrait) and (max-width: 767px)").matches) { } else {
+				gsap.to(".nav_button", { autoAlpha: 1, xPercent: 0, ease: "elastic.out(1.35,0.4)" });
+			}
+
+			container.__strokeWatcher = startSvgStrokeWatcher();
+
 			container.style.display = "flex";
 			container.style.pointerEvents = "auto";
-			container.style.zIndex = 10000;
 			container.querySelector(".show_works-upper div span, .show_behind-upper div span").style.display = "none";
 			gsap.set(container, { autoAlpha: 0 });
 			document.addEventListener("keydown", handleEsc);
-			if (backBtn) backBtn.addEventListener("click", handleBack, { once: true });
 		},
 		onReverseComplete: () => {
 			try { fly.remove(); } catch (e) { }
+			if (!menuIconTl.reversed()) menuIconTl.reverse();
+			activeContent = null;
+
+			if (container.__strokeWatcher) {
+				container.__strokeWatcher.stop();
+				container.__strokeWatcher = null;
+			}
+
+			if (window.matchMedia("(orientation: portrait) and (max-width: 767px)").matches) {
+				gsap.to(".nav_button", { autoAlpha: 1, xPercent: 0 });
+			} else {
+				gsap.to(".nav_button", { autoAlpha: 0, xPercent: 500, ease: "elastic.in(1.35,0.4)" });
+			}
+			gsap.to(".nav_items ul li", { autoAlpha: 1, xPercent: 0, duration: 0.25, ease: "power4.out", stagger: { each: 0.1, start: "start" } });
+
 			container.style.display = "none";
 			container.style.pointerEvents = "none";
-			container.style.zIndex = "";
 			gsap.set(container, { clearProps: "all" });
 			document.removeEventListener("keydown", handleEsc);
 		}
@@ -799,15 +1066,9 @@ function showContent(triggerEl) {
 	// --- ANIMATIONS ---
 	tl.to(fly.querySelector(".works_heading, .behind_heading"), { xPercent: 10000, ease: "power2.in" });
 	tl.to(fly.querySelector(".works_details, .behind_details"), { xPercent: -10000, ease: "power2.in" }, "<");
-	tl.to(fly, { autoAlpha: 1, width: vw, height: "100dvh", top: 0, left: 0, duration: 0.5, ease: "back.out(1)" });
-	tl.addLabel("sicc");
-
-	tl.set(container, { autoAlpha: 1 });
-	if (window.matchMedia("(orientation: portrait)").matches) {
-		tl.to(fly, { top: "20vh", height: calculatedHeight, duration: 0.5, ease: "back.out(1.2)" }, "sicc-=0.1");
-	} else {
-		tl.to(fly, { top: "30vh", height: calculatedHeight, duration: 0.5, ease: "back.out(1.2)" }, "sicc-=0.1");
-	}
+	tl.to(fly, { autoAlpha: 1, width: vw, height: "100dvh", top: 0, left: 0, ease: "elastic.out(1.75,0.9)" });
+	tl.to(container, { autoAlpha: 1, duration: 0 });
+	tl.to(fly, { top: window.matchMedia("(orientation: portrait)").matches ? "20vh" : "30vh", height: calculatedHeight, duration: 0.35, ease: "power4.inOut" });
 
 	const titleEl = container.querySelector(".show_works-upper div span, .show_behind-upper div span");
 	gsap.delayedCall(0, () => {
@@ -820,9 +1081,10 @@ function showContent(triggerEl) {
 	tl.to(fly, 0.25, { autoAlpha: 0 });
 
 	container.__tl = tl;
+	initFooterNavigation(container);
 }
 
-function aboutContent() {
+/* function aboutContent() {
 
 	const sections = gsap.utils.toArray(".about_section");
 	sections.forEach(section => {
@@ -843,11 +1105,12 @@ function aboutContent() {
 			{ autoAlpha: 1, y: 0, duration: 0.25, ease: "power2.out", stagger: { each: 0.1, start: "start" } },
 		);
 	});
-}
+} */
 
 async function initGlobal() {
 	await switchLang();
 	await switchMain();
 	decoLink();
+	initMenu();
 }
 initGlobal();
