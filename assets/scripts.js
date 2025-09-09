@@ -1,4 +1,4 @@
-gsap.registerPlugin(ScrollTrigger, Draggable, MorphSVGPlugin, SplitText);
+gsap.registerPlugin(Draggable, MorphSVGPlugin, SplitText);
 
 async function switchLang() {
 	const urlParams = new URLSearchParams(window.location.search);
@@ -139,6 +139,7 @@ async function switchLang() {
 		elBtnLang.addEventListener("click", () => {
 			const newLang = lang === "en-us" ? "es" : "en-us";
 			localStorage.setItem("lang", newLang);
+			sessionStorage.setItem("langSwitch", "true");
 			updateUrlLang(newLang);
 		});
 	}
@@ -209,7 +210,6 @@ function decoLink() {
 	});
 }
 
-// --- GLOBAL STATE ---
 let currentSection = null, sectionMap = {}, switchSection = null, pendingTargetSection = null, menuIconTl = null, activeContent = null;
 async function initMenu() {
 	const menuInner = document.querySelector(".nav_items");
@@ -328,20 +328,32 @@ async function initMenu() {
 
 			setActiveDeco(null);
 
-			async function goHomeAfterContentClose(targetSection) {
+			function waitForFullClose(container) {
 				return new Promise(resolve => {
-					if (activeContent && activeContent.__tl) {
-						activeContent.__tl.eventCallback("onReverseComplete", () => {
-							activeContent.__tl.eventCallback("onReverseComplete", null);
-							switchSection(targetSection);
-							resolve();
-						});
-						activeContent.__tl.reverse();
-					} else {
-						switchSection(targetSection);
-						resolve();
+					if (!container?.__tl) return resolve();
+					container.__tl.reverse();
+					function check() {
+						if (!container.__tl || (container.__tl.reversed() && !container.__tl.isActive())) {
+							requestAnimationFrame(() => resolve());
+						} else {
+							requestAnimationFrame(check);
+						}
 					}
+					check();
 				});
+			}
+
+			async function goHomeAfterContentClose(targetSection) {
+				if (activeContent && activeContent.__tl) {
+					const backEvent = activeContent.querySelector(".show_works-wrapper, .show_behind-wrapper");
+					if (backEvent) {
+						backEvent.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+					}
+					await waitForFullClose(activeContent);
+					switchSection(targetSection);
+				} else {
+					switchSection(targetSection);
+				}
 			}
 
 			if (window.matchMedia('(orientation: portrait) and (max-width: 767px)').matches) {
@@ -368,6 +380,49 @@ async function initMenu() {
 	}
 }
 
+async function introAnimation() {
+	const homeSection = document.querySelector(".main__section-home");
+	if (!homeSection) return;
+
+	const sectionUpper = homeSection.querySelector(".section_upper");
+	const header = document.querySelector("header");
+	const nav = document.querySelector("nav");
+
+	gsap.set(header, { xPercent: -100 });
+	gsap.set(nav, { xPercent: 100 });
+	gsap.set(sectionUpper, { height: "100dvh" });
+	gsap.set(".home_content span span", { display: "none", y: 100, autoAlpha: 0 });
+
+	const span = sectionUpper.querySelector("div span");
+	let splittedIn = null;
+	if (span) {
+		splittedIn = new SplitText(span, { type: "words, chars" });
+		gsap.set(splittedIn.chars, { autoAlpha: 0, scaleY: 0, transformOrigin: "center bottom" });
+	}
+
+	const tl = gsap.timeline();
+	tl.to(sectionUpper, { height: "50dvh", duration: 0.6, ease: "power2.out" }, 2)
+		.to(header, { xPercent: 0, duration: 0.6, ease: "power3.out" }, 2)
+		.to(nav, { xPercent: 0, duration: 0.6, ease: "power3.out" }, 2)
+		.to(splittedIn?.chars || [], {
+			autoAlpha: 1,
+			scaleY: 1,
+			stagger: { each: 0.025, from: "random" },
+			ease: "power4.out",
+			duration: 0.6
+		}, "-=0.2")
+		.to(".home_content span span", { display: "flex", duration: 0 }, "-=0.4")
+		.to(".home_content span span", {
+			y: 0,
+			autoAlpha: 1,
+			duration: 0.25,
+			stagger: { each: 0.05, from: "start" },
+			ease: "power3.out"
+		}, "-=0.3");
+
+	return tl;
+}
+
 async function switchMain() {
 	await document.fonts.ready;
 
@@ -388,13 +443,26 @@ async function switchMain() {
 		if (span) splitCache[selector] = new SplitText(span, { type: "words, chars" });
 	});
 
+	const navEntries = performance.getEntriesByType("navigation");
+	const isReload = (
+		performance.navigation.type === performance.navigation.TYPE_RELOAD ||
+		(navEntries.length && navEntries[0].type === "reload")
+	);
+
+	const langSwitch = sessionStorage.getItem("langSwitch") === "true";
+
+	if (isReload || langSwitch) {
+		await introAnimation();
+		sessionStorage.removeItem("langSwitch");
+	}
+
 	switchSection = async function (targetSection) {
 		if (!targetSection || targetSection === currentSection) return;
 
 		const mainActual = currentSection;
 		const mainNext = targetSection;
 
-		// scroll lock
+		// --- SCROLL SET ---
 		if (mainActual?.classList.contains("main__section-about")) {
 			document.body.style.overflowY = "hidden";
 		}
@@ -420,8 +488,7 @@ async function switchMain() {
 		}
 
 		// --- OUT ANIMATIONS ---
-		const outPrefix = mainActual.classList.contains("main__section-works") ? "works" :
-			mainActual.classList.contains("main__section-behind") ? "behind" : null;
+		const outPrefix = mainActual.classList.contains("main__section-works") ? "works" : mainActual.classList.contains("main__section-behind") ? "behind" : null;
 		if (outPrefix && sliderInstances[outPrefix]) {
 			await sliderInstances[outPrefix].slideOut();
 		}
@@ -434,15 +501,24 @@ async function switchMain() {
 				onComplete: r
 			}));
 		}
+
 		await gsap.to(mainActual.querySelector(".section_upper"), { height: "100dvh", duration: 0.35, ease: "power2.in" });
 		if (mainActual.classList.contains("main__section-about")) {
-			gsap.set(document.querySelectorAll(".show_about-bottom div"), { clearProps: "opacity,visibility" });
+			gsap.set(document.querySelector(".show_about-wrapper"), { clearProps: "opacity,visibility" });
+		}
+		if (mainNext.classList.contains("main__section-home")) {
+			gsap.set(document.querySelectorAll(".home_content span span"), { clearProps: "all" });
+			gsap.to(".home_content", { display: "", duration: 0 });
 		}
 		mainActual.style.display = "none";
 
+
 		// --- IN ANIMATIONS ---
+		if (mainNext.classList.contains("main__section-home")) {
+			gsap.set(".home_content span span", { y: 100, autoAlpha: 0 });
+		}
 		if (splittedIn?.chars?.length) {
-			gsap.set(splittedIn.chars, { scaleY: 0, transformOrigin: "center bottom" });
+			gsap.set(splittedIn.chars, { scaleY: 0, transformOrigin: "center bottom", duration: 0 });
 		}
 		mainNext.style.display = "flex";
 		mainNext.style.removeProperty("visibility");
@@ -454,7 +530,7 @@ async function switchMain() {
 		if (mainNext.classList.contains("main__section-home")) {
 			await gsap.fromTo(mainNext.querySelector(".section_upper"),
 				{ height: "100dvh" },
-				{ height: "0vh", duration: 0.5, ease: "power2.out" }
+				{ height: "50dvh", duration: 0.25, ease: "power2.out" }
 			);
 		} else {
 			const targetHeight = window.matchMedia("(orientation: portrait)").matches ? "20dvh" : "30dvh";
@@ -474,12 +550,16 @@ async function switchMain() {
 			}));
 		}
 
-		if (mainNext.classList.contains("main__section-about")) {
-			aboutContent();
+		if (mainNext.classList.contains("main__section-home")) {
+			gsap.to(".home_content", { display: "flex", duration: 0 });
+			gsap.to(".home_content span span", { y: 0, autoAlpha: 1, duration: 0.25, stagger: { each: 0.05, from: "start" } })
 		}
 
-		const inPrefix = mainNext.classList.contains("main__section-works") ? "works" :
-			mainNext.classList.contains("main__section-behind") ? "behind" : null;
+		if (mainNext.classList.contains("main__section-about")) {
+			gsap.fromTo(".show_about-wrapper", { y: 100, autoAlpha: 0 }, { y: 0, autoAlpha: 1, ease: "power4.out" })
+		}
+
+		const inPrefix = mainNext.classList.contains("main__section-works") ? "works" : mainNext.classList.contains("main__section-behind") ? "behind" : null;
 		if (inPrefix) {
 			const api = sliderInstances[inPrefix] || initSlider(inPrefix);
 			if (api) {
@@ -1018,32 +1098,6 @@ async function showContent(triggerEl) {
 	container.__tl = tl;
 }
 
-function aboutContent() {
-
-	const fiTl = gsap.timeline();
-	fiTl.fromTo(".firstItem", { y: 100, autoAlpha: 0}, { y: 0, autoAlpha: 1, ease: "power4.out" })
-
-	const sections = gsap.utils.toArray(".scrollTrigger");
-	sections.forEach(section => {
-		const divs = section.querySelectorAll("div, img");
-
-		const tl = gsap.timeline({
-			paused: true,
-			scrollTrigger: {
-				trigger: section,
-				start: "top 60%",
-				end: "bottom 40%",
-				toggleActions: "play none none none"
-			}
-		});
-
-		tl.fromTo(divs,
-			{ autoAlpha: 0, y: 100 },
-			{ autoAlpha: 1, y: 0, duration: 0.25, ease: "power2.out", stagger: { each: 0.1, start: "start" } },
-		);
-	});
-}
-
 async function initGlobal() {
 	await switchLang();
 	await switchMain();
@@ -1051,8 +1105,3 @@ async function initGlobal() {
 	initMenu();
 }
 initGlobal();
-
-
-/* 
-- aktív "showContent()" tartalomból logó-klikk -> showContent anim reverse biztosítás tartalomváltás előtt
-*/
