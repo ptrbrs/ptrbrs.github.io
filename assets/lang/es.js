@@ -5,7 +5,7 @@ export default {
         menu_about: `sobre.mi`,
         menu_lang: `english`,
         home_title: `<span>¡Di</span> <span>SÍ</span> <span>a</span> <span>no!</span>`,
-        home_desc: `pregunta. desafío. idea. implementación. respuesta.`,
+        home_desc: `<span>pregunta</span><span>|</span><span>desafío</span><span>|</span><span>idea</span><span>|</span><span>implementación</span><span>|</span><span>respuesta</span>`,
         works_title: `obras`,
         works_desc: `¡Dije que SÍ!`,
         behind_title: `detrás`,

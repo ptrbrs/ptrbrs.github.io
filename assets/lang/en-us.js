@@ -5,7 +5,7 @@ export default {
         menu_about: `about`,
         menu_lang: `español`,
         home_title: `<span>say</span> <span>YES</span> <span>2</span> <span>no!</span>`,
-        home_desc: `question. challenge. idea. implementation. answer.`,
+        home_desc: `<span>question</span><span>|</span><span>challenge</span><span>|</span><span>idea</span><span>|</span><span>implementation</span><span>|</span><span>answer</span>`,
         works_title: `works`,
         works_desc: `I said YES...`,
         behind_title: `behind`,
