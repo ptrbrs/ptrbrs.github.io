@@ -396,7 +396,9 @@ async function introAnimation() {
 	const span = sectionUpper.querySelector("div span");
 	let splittedIn = null;
 	if (span) {
+		if (span._splitText) span._splitText.revert();
 		splittedIn = new SplitText(span, { type: "words, chars" });
+		span._splitText = splittedIn;
 		gsap.set(splittedIn.chars, { autoAlpha: 0, scaleY: 0, transformOrigin: "center bottom" });
 	}
 
@@ -444,17 +446,18 @@ async function switchMain() {
 	});
 
 	const navEntries = performance.getEntriesByType("navigation");
-	const isReload = (
-		performance.navigation.type === performance.navigation.TYPE_RELOAD ||
-		(navEntries.length && navEntries[0].type === "reload")
-	);
+	const navType = navEntries[0]?.type || "navigate";
+
+	const isReload = navType === "reload";
+	const isNavigate = navType === "navigate";
 
 	const langSwitch = sessionStorage.getItem("langSwitch") === "true";
 
-	if (isReload || langSwitch) {
+	if (isReload || isNavigate || langSwitch) {
 		await introAnimation();
 		sessionStorage.removeItem("langSwitch");
 	}
+
 
 	switchSection = async function (targetSection) {
 		if (!targetSection || targetSection === currentSection) return;
