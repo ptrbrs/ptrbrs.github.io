@@ -851,6 +851,17 @@ async function showContent(triggerEl) {
 	if (container.__tl && container.__tl.isActive() && !container.__tl.reversed()) return;
 
 	container.setAttribute("data-page", pageKey);
+
+	if (container.__titleSplit) {
+		container.__titleSplit.revert();
+		container.__titleSplit = null;
+	}
+
+	const titleEl = container.querySelector(".show_works-upper div span, .show_behind-upper div span");
+	if (titleEl) {
+		titleEl.textContent = "";
+	}
+
 	if (window.langAPI?.getData && window.langAPI?.fillContent) {
 		const obj = window.langAPI.getData(pageKey);
 		if (obj) window.langAPI.fillContent(container, obj);
@@ -1088,12 +1099,26 @@ async function showContent(triggerEl) {
 	tl.to(container, { autoAlpha: 1, duration: 0 });
 	tl.to(fly, { top: window.matchMedia("(orientation: portrait)").matches ? "20vh" : "30vh", height: calculatedHeight, duration: 0.35, ease: "power4.inOut" });
 
-	const titleEl = container.querySelector(".show_works-upper div span, .show_behind-upper div span");
 	gsap.delayedCall(0, () => {
-		const titleSplit = new SplitText(titleEl, { type: "chars" });
-		tl.set(".show_works-upper div span, .show_behind-upper div span", { display: "inline" });
-		tl.set(titleSplit.chars, { scaleY: 0, transformOrigin: "center bottom" });
-		tl.to(titleSplit.chars, { scaleY: 1, transformOrigin: "center bottom", stagger: { each: 0.025, from: "random" }, ease: "power2.out" });
+
+		if (container.__titleSplit) {
+			container.__titleSplit.revert();
+			container.__titleSplit = null;
+		}
+
+		titleEl.textContent = titleEl.textContent;
+
+		const split = new SplitText(titleEl, { type: "chars" });
+		container.__titleSplit = split;
+
+		tl.set(titleEl, { display: "inline" });
+		tl.set(split.chars, { scaleY: 0, transformOrigin: "center bottom" });
+		tl.to(split.chars, {
+			scaleY: 1,
+			transformOrigin: "center bottom",
+			stagger: { each: 0.025, from: "random" },
+			ease: "power2.out"
+		});
 	});
 
 	tl.to(fly, 0.25, { autoAlpha: 0 });
