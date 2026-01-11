@@ -292,6 +292,11 @@ async function initMenu() {
 	links.forEach(link => {
 		link.addEventListener("click", async function () {
 			const langKey = link.getAttribute("data-lang");
+			if (window.gtag) {
+  gtag('event', 'menu_click', {
+    menu_item: langKey
+  });
+}
 			const selector = sectionMap[langKey];
 			const targetSection = document.querySelector(selector);
 
@@ -600,11 +605,21 @@ function initSlider(prefix) {
 	slides.forEach(el => track.appendChild(el));
 
 	track.addEventListener("click", (e) => {
-		const slide = e.target.closest("[data-page]");
-		if (slide && track.contains(slide)) {
-			showContent(slide);
-		}
-	});
+  const slide = e.target.closest("[data-page]");
+  if (slide && track.contains(slide)) {
+
+    const key = slide.getAttribute("data-page");
+
+    if (window.gtag && key) {
+      gtag('event', 'project_tile_click', {
+        project_key: key,
+        slider: prefix
+      });
+    }
+
+    showContent(slide);
+  }
+});
 
 	Object.assign(root.style, { overflow: "hidden", position: "relative" });
 	Object.assign(track.style, { display: "flex", willChange: "transform" });
@@ -702,8 +717,18 @@ function initSlider(prefix) {
 			onComplete: normalizeIndex
 		});
 	}
-	function next() { return goTo(currentIndex + 1, {}, "next"); }
-	function prev() { return goTo(currentIndex - 1, {}, "prev"); }
+	function next() { if (window.gtag) {
+    gtag('event', 'slider_navigate', {
+      direction: 'next',
+      slider: prefix
+    });
+  } return goTo(currentIndex + 1, {}, "next"); }
+	function prev() { if (window.gtag) {
+    gtag('event', 'slider_navigate', {
+      direction: 'prev',
+      slider: prefix
+    });
+  } return goTo(currentIndex - 1, {}, "prev"); }
 
 	function createDraggable() {
 		if (drag) drag.kill();
@@ -834,6 +859,21 @@ async function showContent(triggerEl) {
 
 	const pageKey = slide.getAttribute("data-page");
 	if (!pageKey) return;
+
+	// --- GA4: project open ---
+if (window.gtag) {
+  gtag('event', 'project_open', {
+    project_key: pageKey,
+    project_group: pageKey.startsWith('works') ? 'works' : 'behind'
+  });
+}
+
+	if (window.gtag) {
+  gtag('event', 'page_view', {
+    page_title: `Project – ${pageKey}`,
+    page_path: `/project/${pageKey}`
+  });
+}
 
 	let prefix = "";
 	let container = null;
