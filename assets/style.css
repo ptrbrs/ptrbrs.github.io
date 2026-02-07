@@ -130,8 +130,10 @@ mark {
 }
 
 .biggerFont {
-  font-size: 6rem;
+  font-size: 14vw;
+  letter-spacing: -0.35vw;
   line-height: 0rem;
+  white-space: nowrap;
 }
 
 .aJustified {
@@ -440,19 +442,23 @@ table tr td {
   display: block;
 }
 
-#projectText table {
-  border: none;
-  padding: 0;
-  margin: 0;
+#projectText {
+  display: flex;
+  flex-direction: column;
 }
-#projectText table tr td:nth-child(1) {
+#projectText div {
+  display: flex;
+  flex-direction: row;
+}
+#projectText div div:nth-child(1) {
+  width: 15ch;
   font-family: "Bricolage Grotesque", sans-serif;
   font-optical-sizing: auto;
   font-style: normal;
   text-align: left;
   vertical-align: baseline;
 }
-#projectText table tr td:nth-child(2) {
+#projectText div div:nth-child(2) {
   padding-bottom: 1rem;
   font-family: "Google Sans Code", monospace;
   font-optical-sizing: auto;
@@ -462,6 +468,11 @@ table tr td {
   line-height: auto;
   text-align: justify;
   vertical-align: baseline;
+}
+@media (orientation: portrait) and (max-width: 767px) {
+  #projectText div {
+    flex-direction: column;
+  }
 }
 
 #projectPrev,
@@ -565,7 +576,6 @@ table tr td {
 .exp_headline {
   display: flex;
   flex-direction: row;
-  background: linear-gradient();
 }
 .exp_headline hr {
   height: 1px;
@@ -598,6 +608,8 @@ table tr td {
 .listStyle {
   list-style: none;
   counter-reset: item;
+  margin: 0;
+  padding: 0 0 0 1rem;
 }
 .listStyle li {
   counter-increment: item;
@@ -612,4 +624,36 @@ table tr td {
   top: 0;
   color: var(--green);
   background: none;
+}
+
+@media (orientation: portrait) and (max-width: 767px) {
+  .exp_headline span:nth-child(1) {
+    padding: 0 0.5rem 0 0;
+    color: var(--green);
+  }
+  .exp_headline span:nth-child(3) {
+    display: none;
+  }
+  .exp_content {
+    margin-left: 0;
+  }
+  .listStyle {
+    list-style: none;
+    counter-reset: item;
+    padding: 0 0 0 0;
+  }
+  .listStyle li {
+    counter-increment: item;
+    position: relative;
+    padding: 0 0 0.5rem 1.5rem;
+  }
+  .listStyle li::before {
+    content: counter(item, square);
+    font-size: 0.9rem;
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--green);
+    background: none;
+  }
 }/*# sourceMappingURL=style.css.map */
