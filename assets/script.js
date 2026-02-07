@@ -108,6 +108,10 @@ function explosion() {
 }
 
 function getProjectSlugs() {
+	if (!window.PROJECT_DB) {
+		console.warn('PROJECT_DB not ready yet');
+		return [];
+	}
 	return Object.keys(window.PROJECT_DB).sort();
 }
 
@@ -546,6 +550,8 @@ function getAdjacentSlug(direction) {
 	if (!currentProjectSlug) return null;
 
 	const slugs = getProjectSlugs();
+	if (!Array.isArray(slugs) || slugs.length === 0) return null;
+
 	const index = slugs.indexOf(currentProjectSlug);
 	if (index === -1) return null;
 
