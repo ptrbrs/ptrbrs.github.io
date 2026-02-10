@@ -449,9 +449,11 @@ table tr td {
 #projectText div {
   display: flex;
   flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 #projectText div div:nth-child(1) {
-  width: 15ch;
+  width: 13ch;
   font-family: "Bricolage Grotesque", sans-serif;
   font-optical-sizing: auto;
   font-style: normal;
@@ -459,6 +461,7 @@ table tr td {
   vertical-align: baseline;
 }
 #projectText div div:nth-child(2) {
+  width: calc(100% - 13ch);
   padding-bottom: 1rem;
   font-family: "Google Sans Code", monospace;
   font-optical-sizing: auto;
