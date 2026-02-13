@@ -476,6 +476,12 @@ table tr td {
   #projectText div {
     flex-direction: column;
   }
+  #projectText div div:nth-child(1) {
+    width: 100%;
+  }
+  #projectText div div:nth-child(2) {
+    width: 100%;
+  }
 }
 
 #projectPrev,
@@ -638,7 +644,7 @@ table tr td {
     display: none;
   }
   .exp_content {
-    margin-left: 0;
+    margin-left: 1.6rem;
   }
   .listStyle {
     list-style: none;
