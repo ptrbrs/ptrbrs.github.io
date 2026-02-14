@@ -177,11 +177,6 @@ function openProject(slug) {
 		keywords: project.keywords
 	});
 
-	const heroImg = document.getElementById('projectImage');
-	heroImg.src = project.image || '';
-	heroImg.alt = project.headline || '';
-	heroImg.loading = 'lazy';
-
 	const projectImage = document.getElementById('projectImage');
 	const projectHead = document.getElementById('projectHead');
 	const projectDetails = document.getElementById('projectDetails');
@@ -192,14 +187,19 @@ function openProject(slug) {
 	//const projectIntroduce = document.getElementById('projectIntroduce');
 	//const projectParagraph = document.getElementById('projectParagraph');
 
-	//document.getElementById('projectHead').textContent = project.headline || '';
-	//document.getElementById('projectDetails').textContent = project.details || '';
-	//document.getElementById('projectTags').innerHTML = project.tags || '';
-	//document.getElementById('projectBrief').innerHTML = project.brief || '';
-	//document.getElementById('projectExecution').innerHTML = project.execution || '';
-	//document.getElementById('projectResult').innerHTML = project.result || '';
-	//document.getElementById('projectIntroduce').innerHTML = project.introduce || '';
-	//document.getElementById('projectParagraph').innerHTML = project.paragraph || '';
+	const heroImg = document.getElementById('projectImage');
+	heroImg.src = project.image || '';
+	heroImg.alt = project.headline || '';
+	heroImg.loading = 'lazy';
+
+	if (projectHead) projectHead.textContent = project.headline || '';
+	if (projectDetails) projectDetails.textContent = project.details || '';
+	if (projectTags) projectTags.innerHTML = project.tags || '';
+	if (projectBrief) projectBrief.innerHTML = project.brief || '';
+	if (projectExecution) projectExecution.innerHTML = project.execution || '';
+	if (projectResult) projectResult.innerHTML = project.result || '';
+	//if (projectIntroduce) projectIntroduce.innerHTML = project.introduce || '';
+	//if (projectParagraph) projectParagraph.innerHTML = project.paragraph || '';
 
 	const gallery = document.getElementById('projectGallery');
 	gallery.innerHTML = '';
@@ -337,10 +337,6 @@ document.getElementById('scrollToTopBtn').addEventListener('click', () => {
 	}
 });
 
-//let originalTitle = document.title;
-//let originalDescription = document.querySelector('meta[name="description"]')?.content || '';
-//let originalKeywords = document.querySelector('meta[name="keywords"]')?.content || '';
-
 function animateOpenProject(slug) {
 	const li = document.querySelector(`.projects_ul li[data-project="${slug}"]`);
 	if (!li) return;
@@ -368,6 +364,9 @@ function animateOpenProject(slug) {
 
 	gsap.to([strong, em], { autoAlpha: 0, duration: 0.2 });
 
+	gsap.set(".animate", { y: 25, autoAlpha: 0 });
+	gsap.set([projectImage], { autoAlpha: 0 });
+
 	gsap.to(clone, {
 		top: 0,
 		left: 0,
@@ -387,16 +386,9 @@ function animateOpenProject(slug) {
 				duration: 0.5,
 				ease: "back.out(2)",
 				onComplete: () => {
+					gsap.set([projectImage], { autoAlpha: 1 });
 					clone.remove();
-					gsap.to([
-						projectHead,
-						projectDetails,
-						projectBrief,
-						projectExecution,
-						projectResult,
-						//projectIntroduce,
-						//projectParagraph
-					], { autoAlpha: 1, duration: 0.3 });
+					gsap.to(".animate", { autoAlpha: 1, y: 0, stagger: { each: 0.025, from: "start" } });
 				}
 			});
 		}
@@ -427,15 +419,7 @@ function animateCloseProject() {
 		objectFit: 'cover'
 	});
 
-	gsap.to([
-		projectHead,
-		projectDetails,
-		projectBrief,
-		projectExecution,
-		projectResult,
-		//projectIntroduce,
-		//projectParagraph
-	], { autoAlpha: 0, duration: 0.2 });
+	gsap.to(".animate", { y: 25, autoAlpha: 0, stagger: { each: 0.025, from: "end" } });
 
 	gsap.to(clone, {
 		top: 0,
@@ -443,7 +427,7 @@ function animateCloseProject() {
 		width: window.innerWidth,
 		height: "100dvh",
 		duration: 0.5,
-		ease: "back.in(2)",
+		ease: "back.out(2)",
 		onComplete: () => {
 			projectLayer.classList.add('hidden');
 			document.body.classList.remove('project-open');
@@ -459,12 +443,11 @@ function animateCloseProject() {
 		}
 	});
 
-	//document.title = originalTitle;
-	//document.querySelector('meta[name="description"]')?.setAttribute('content', originalDescription);
-	//document.querySelector('meta[name="keywords"]')?.setAttribute('content', originalKeywords);
+	const strong = li.querySelector('.projects_overlay strong');
+	const em = li.querySelector('.projects_overlay em');
+	gsap.set([strong, em], { clearProps: 'all' });
 
 	setMeta(ORIGINAL_META);
-
 	window.scrollTo({ top: lastScrollY, behavior: 'auto' });
 
 	currentProjectSlug = null;
