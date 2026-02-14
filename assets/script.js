@@ -83,6 +83,7 @@ function explosion() {
 				const dy = (b.top + b.height / 2) - (e.top + e.height / 2);
 
 				const distance = Math.hypot(dx, dy);
+				if (distance === 0) return;
 
 				const multiplier = Math.pow(distance / 300, 3);
 				const push = Math.min(multiplier * baseGap, maxPush);
@@ -163,14 +164,7 @@ function openProject(slug) {
 	const project = DB[slug];
 	if (!project) return;
 
-	// GA tracking
-	if (window.gtag) {
-		gtag('event', 'project_open', {
-			project_slug: slug,
-			project_title: project.title,
-			page_path: location.pathname
-		});
-	}
+	Analytics.trackProjectOpen(slug, project.title);
 
 	currentProjectSlug = slug;
 
@@ -188,12 +182,22 @@ function openProject(slug) {
 	heroImg.alt = project.headline || '';
 	heroImg.loading = 'lazy';
 
-	document.getElementById('projectHead').textContent = project.headline || '';
-	document.getElementById('projectDetails').textContent = project.details || '';
-	document.getElementById('projectTags').innerHTML = project.tags || '';
-	document.getElementById('projectBrief').innerHTML = project.brief || '';
-	document.getElementById('projectExecution').innerHTML = project.execution || '';
-	document.getElementById('projectResult').innerHTML = project.result || '';
+	const projectImage = document.getElementById('projectImage');
+	const projectHead = document.getElementById('projectHead');
+	const projectDetails = document.getElementById('projectDetails');
+	const projectBrief = document.getElementById('projectBrief');
+	const projectExecution = document.getElementById('projectExecution');
+	const projectResult = document.getElementById('projectResult');
+	const projectLayer = document.getElementById('projectLayer');
+	//const projectIntroduce = document.getElementById('projectIntroduce');
+	//const projectParagraph = document.getElementById('projectParagraph');
+
+	//document.getElementById('projectHead').textContent = project.headline || '';
+	//document.getElementById('projectDetails').textContent = project.details || '';
+	//document.getElementById('projectTags').innerHTML = project.tags || '';
+	//document.getElementById('projectBrief').innerHTML = project.brief || '';
+	//document.getElementById('projectExecution').innerHTML = project.execution || '';
+	//document.getElementById('projectResult').innerHTML = project.result || '';
 	//document.getElementById('projectIntroduce').innerHTML = project.introduce || '';
 	//document.getElementById('projectParagraph').innerHTML = project.paragraph || '';
 
@@ -333,9 +337,9 @@ document.getElementById('scrollToTopBtn').addEventListener('click', () => {
 	}
 });
 
-let originalTitle = document.title;
-let originalDescription = document.querySelector('meta[name="description"]')?.content || '';
-let originalKeywords = document.querySelector('meta[name="keywords"]')?.content || '';
+//let originalTitle = document.title;
+//let originalDescription = document.querySelector('meta[name="description"]')?.content || '';
+//let originalKeywords = document.querySelector('meta[name="keywords"]')?.content || '';
 
 function animateOpenProject(slug) {
 	const li = document.querySelector(`.projects_ul li[data-project="${slug}"]`);
@@ -402,6 +406,8 @@ function animateOpenProject(slug) {
 function animateCloseProject() {
 	if (!currentProjectSlug) return;
 
+	Analytics.trackProjectClose();
+
 	const li = document.querySelector(`.projects_ul li[data-project="${currentProjectSlug}"]`);
 	if (!li) return;
 
@@ -453,9 +459,11 @@ function animateCloseProject() {
 		}
 	});
 
-	document.title = originalTitle;
-	document.querySelector('meta[name="description"]')?.setAttribute('content', originalDescription);
-	document.querySelector('meta[name="keywords"]')?.setAttribute('content', originalKeywords);
+	//document.title = originalTitle;
+	//document.querySelector('meta[name="description"]')?.setAttribute('content', originalDescription);
+	//document.querySelector('meta[name="keywords"]')?.setAttribute('content', originalKeywords);
+
+	setMeta(ORIGINAL_META);
 
 	window.scrollTo({ top: lastScrollY, behavior: 'auto' });
 
@@ -474,11 +482,14 @@ document.querySelectorAll('.projects_ul li').forEach(li => {
 	});
 });
 
-closeLayer.addEventListener('click', () => {
-	if (!currentProjectSlug) return;
-	animateCloseProject(currentProjectSlug);
-	currentProjectSlug = null;
-});
+const closeLayer = document.getElementById('closeLayer');
+
+if (closeLayer) {
+	closeLayer.addEventListener('click', () => {
+		if (!currentProjectSlug) return;
+		animateCloseProject();
+	});
+}
 
 let isSliding = false;
 function slideProject(direction) {
@@ -487,14 +498,7 @@ function slideProject(direction) {
 	const targetSlug = getAdjacentSlug(direction);
 	if (!targetSlug) return;
 
-	// GA tracking
-	if (window.gtag) {
-		gtag('event', 'project_slide', {
-			direction,
-			from: currentProjectSlug,
-			to: targetSlug
-		});
-	}
+	Analytics.trackProjectSlide(direction, currentProjectSlug, targetSlug);
 
 	isSliding = true;
 
@@ -607,37 +611,8 @@ function experienceAccordion() {
 	});
 }
 
-const sections = document.querySelectorAll('main section[data-title]');
-let currentSection = null;
-let enterTime = null;
-
-function trackSectionEnter(section) {
-	if (!window.gtag) return;
-	if (currentSection && enterTime) {
-		const duration = Math.round((Date.now() - enterTime)/1000);
-		gtag('event', 'section_view', {
-			section_title: currentSection.dataset.title,
-			duration: duration,
-			page_path: location.pathname
-		});
-	}
-
-	currentSection = section;
-	enterTime = Date.now();
-}
-
-const observer = new IntersectionObserver(entries => {
-	entries.forEach(entry => {
-		if (entry.isIntersecting) {
-			trackSectionEnter(entry.target);
-		}
-	});
-}, { threshold: 0.5 });
-
-sections.forEach(sec => observer.observe(sec));
-
-
 document.addEventListener('DOMContentLoaded', () => {
+	Analytics.init();
 	initProjectList();
 	bindProjectNav();
 	bindProjectNavHelpers();
