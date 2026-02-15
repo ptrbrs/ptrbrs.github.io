@@ -465,16 +465,16 @@
                     </div>
                     <!-- <h4 id="projectIntroduce"></h4>
                     <p id="projectParagraph"></p> -->
-                    <h3 class="animate">Galería de imágenes</h3>
                 </div>
+                <h3 class="animate">Image gallery</h3>
+                <ul id="projectGallery" class="openProjects_ul animate"></ul>
             </div>
-            <div id="projectGallery" class="project-gallery animate"></div>
         </div>
         <div id="projectScrollTo"><span id="scrollToTopBtn"><svg xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 640 640">
                     <path
                         d="M297.4 201.4C309.9 188.9 330.2 188.9 342.7 201.4L502.7 361.4C515.2 373.9 515.2 394.2 502.7 406.7C490.2 419.2 469.9 419.2 457.4 406.7L320 269.3L182.6 406.6C170.1 419.1 149.8 419.1 137.3 406.6C124.8 394.1 124.8 373.8 137.3 361.3L297.3 201.3z" />
-                </svg>aLaCima</span></div>
+                </svg>aCima</span></div>
         <div id="projectPrev"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
                 <path
                     d="M201.4 297.4C188.9 309.9 188.9 330.2 201.4 342.7L361.4 502.7C373.9 515.2 394.2 515.2 406.7 502.7C419.2 490.2 419.2 469.9 406.7 457.4L269.3 320L406.6 182.6C419.1 170.1 419.1 149.8 406.6 137.3C394.1 124.8 373.8 124.8 361.3 137.3L201.3 297.3z" />
@@ -485,13 +485,21 @@
             </svg></div>
     </div>
 
+    <div id="lightbox" class="lightbox">
+	    <div class="lightbox__bg"></div>
+
+	    <button class="lightbox__nav prev" aria-label="Previo">‹</button>
+	    <button class="lightbox__nav next" aria-label="Próximo">›</button>
+
+	    <div class="lightbox__caption"></div>
+    </div>
+
     <script type="module" src="/assets/app.js"></script>
     <script type="module">
         import DB from '/data/es.js';
         window.PROJECT_DB = DB;
     </script>
     <script src="https://cdn.jsdelivr.net/npm/gsap/dist/gsap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gsap/dist/ScrollTrigger.min.js"></script>
     <script src="/assets/analytics.js"></script>
     <script type="module" src="/assets/script.js"></script>
 </body>
