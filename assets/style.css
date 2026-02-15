@@ -7,9 +7,6 @@
   --bgColor: #FFFFFF;
   --greenBCKG: #C0EEC0;
   --green: #00bb00;
-  --supHeight: 30vh;
-  --headPadding: 5vw;
-  --sidePadding: 10vw;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -19,6 +16,11 @@
     --greenBCKG: #557855;
     --green: #00AA00;
   }
+}
+:root {
+  --supHeight: 30vh;
+  --headPadding: 5vw;
+  --sidePadding: 10vw;
 }
 @media (orientation: portrait) and (max-width: 767px) {
   :root {
@@ -273,7 +275,9 @@ table tr td {
   vertical-align: top;
 }
 
-.projects_ul {
+.projects_ul,
+.openProjects_ul {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   grid-auto-rows: 1fr;
@@ -283,7 +287,8 @@ table tr td {
   padding: 0;
   margin: 0;
 }
-.projects_ul li {
+.projects_ul li,
+.openProjects_ul li {
   position: relative;
   aspect-ratio: 1/1;
   overflow: hidden;
@@ -291,38 +296,67 @@ table tr td {
   transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
   will-change: transform;
 }
-.projects_ul li.wide {
+.projects_ul li.wide,
+.openProjects_ul li.wide {
   grid-column: span 2;
   aspect-ratio: 2/1;
 }
-.projects_ul li.tall {
+.projects_ul li.tall,
+.openProjects_ul li.tall {
   grid-row: span 2;
   aspect-ratio: 1/2;
 }
-.projects_ul li.hero {
+.projects_ul li.hero,
+.openProjects_ul li.hero {
   grid-column: span 2;
   grid-row: span 2;
 }
 .projects_ul a,
-.projects_ul img {
+.projects_ul img,
+.openProjects_ul a,
+.openProjects_ul img {
   width: 100%;
   height: 100%;
   display: block;
 }
-.projects_ul a {
+.projects_ul a,
+.openProjects_ul a {
   position: relative;
 }
-.projects_ul a:hover .projects_overlay {
+.projects_ul a:hover .projects_overlay,
+.openProjects_ul a:hover .projects_overlay {
   opacity: 1;
   cursor: pointer;
 }
-.projects_ul img {
+.projects_ul img,
+.openProjects_ul img {
   -o-object-fit: cover;
      object-fit: cover;
   -o-object-position: center;
      object-position: center;
 }
-.projects_overlay {
+@media (max-width: 1024px) {
+  .projects_ul,
+  .openProjects_ul {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .projects_ul,
+  .openProjects_ul {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .projects_ul li.wide, .projects_ul li.tall, .projects_ul li.hero,
+  .openProjects_ul li.wide,
+  .openProjects_ul li.tall,
+  .openProjects_ul li.hero {
+    grid-column: span 1;
+    grid-row: span 1;
+    aspect-ratio: 1/1;
+  }
+}
+.projects_overlay,
+.openProjects_overlay {
   position: absolute;
   inset: 0;
   font-family: "Bricolage Grotesque", sans-serif;
@@ -339,28 +373,15 @@ table tr td {
   transition: opacity 0.3s ease;
   text-align: center;
 }
-.projects_overlay strong {
+.projects_overlay strong,
+.openProjects_overlay strong {
   font-size: 1rem;
 }
-.projects_overlay em {
+.projects_overlay em,
+.openProjects_overlay em {
   font-style: normal;
   font-size: 0.75rem;
   opacity: 0.8;
-}
-@media (max-width: 1024px) {
-  .projects_ul {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-@media (max-width: 600px) {
-  .projects_ul {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .projects_ul li.wide, .projects_ul li.tall, .projects_ul li.hero {
-    grid-column: span 1;
-    grid-row: span 1;
-    aspect-ratio: 1/1;
-  }
 }
 
 #projectLayer {
@@ -370,28 +391,20 @@ table tr td {
   width: 100%;
   height: 100%;
   padding-bottom: 10vh;
-  background: var(--bgColor);
+  background: var(--greenBCKG);
   overflow-y: auto;
   z-index: 999;
 }
-
 #projectLayer.hidden {
   display: none;
 }
-
 #projectStage {
   position: relative;
   overflow: hidden;
 }
-
-.project-slide {
-  width: 100%;
-}
-
 #projectImage {
   width: 100%;
 }
-
 #projectContent {
   width: 100%;
   padding-right: var(--sidePadding);
@@ -401,22 +414,6 @@ table tr td {
   align-items: flex-start;
   flex-direction: column;
 }
-
-#projectGallery figure {
-  width: 100%;
-  margin: 0 0 3rem 0;
-  padding: 0;
-}
-#projectGallery figure figcaption {
-  padding-top: 0.25rem;
-  font-family: "Google Sans Code", monospace;
-  font-optical-sizing: auto;
-  font-style: normal;
-  font-weight: 200;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
 #projectTags {
   padding-top: 1rem;
   padding-bottom: 1rem;
@@ -435,13 +432,6 @@ table tr td {
   margin: 0 0.5rem;
   content: "@";
 }
-
-.project-gallery img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
 #projectText {
   display: flex;
   flex-direction: column;
@@ -483,9 +473,16 @@ table tr td {
     width: 100%;
   }
 }
-
-#projectPrev,
-#projectNext {
+#projectGallery figcaption {
+  padding-top: 0.25rem;
+  font-family: "Google Sans Code", monospace;
+  font-optical-sizing: auto;
+  font-style: normal;
+  font-weight: 200;
+  font-size: 0.9rem;
+  text-align: center;
+}
+#projectPrev, #projectNext {
   position: fixed;
   top: 0;
   width: 8vw;
@@ -497,36 +494,30 @@ table tr td {
   transition: all 0.2ms ease-in-out;
   z-index: 0;
 }
-#projectPrev:hover,
-#projectNext:hover {
+#projectPrev:hover, #projectNext:hover {
   background: rgba(0, 0, 0, 0.3725490196);
   transition: all 0.2ms ease-in-out;
   cursor: pointer;
 }
-#projectPrev:hover svg,
-#projectNext:hover svg {
+#projectPrev:hover svg, #projectNext:hover svg {
   transition: all 0.2ms ease-in-out;
   fill: var(--green);
   opacity: 1;
 }
-#projectPrev svg,
-#projectNext svg {
+#projectPrev svg, #projectNext svg {
   width: 5vw;
   stroke-width: 0;
   fill: var(--green);
   opacity: 0.4;
 }
-
 #projectPrev {
   left: 0;
   margin: 0 auto 0 0;
 }
-
 #projectNext {
   right: 0;
   margin: 0 0 0 auto;
 }
-
 #projectScrollTo {
   width: 100%;
   display: flex;
@@ -665,4 +656,63 @@ table tr td {
     color: var(--green);
     background: none;
   }
+}
+.lightbox {
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 9999;
+}
+
+.lightbox__bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9333333333);
+  opacity: 0;
+  z-index: 1;
+}
+
+.lightbox img {
+  position: fixed;
+  will-change: transform, width, height;
+  z-index: 2;
+}
+
+.lightbox__nav {
+  position: fixed;
+  height: 100%;
+  top: 0;
+  padding: 0 1rem;
+  font-size: 3rem;
+  background: none;
+  border: none;
+  color: white;
+  text-shadow: 0px 0px 10px #000000;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.prev {
+  left: 0;
+}
+
+.next {
+  right: 0;
+}
+
+.lightbox__caption {
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+  margin-right: auto;
+  margin-bottom: 5vh;
+  margin-left: auto;
+  font-family: "Google Sans Code", monospace;
+  font-optical-sizing: auto;
+  font-style: normal;
+  font-weight: 200;
+  font-size: 0.9rem;
+  text-align: center;
+  color: white;
+  z-index: 4;
 }/*# sourceMappingURL=style.css.map */
