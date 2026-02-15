@@ -1,5 +1,3 @@
-gsap.registerPlugin(ScrollTrigger);
-
 function decoLink() {
 	const containers = document.querySelectorAll('.decoCont');
 
@@ -210,24 +208,234 @@ function openProject(slug) {
 		const imgSrc = project[key];
 		if (!imgSrc) return;
 
-		const wrapper = document.createElement('figure');
-		wrapper.className = 'project-gallery-item';
+		const li = document.createElement('li');
+		li.className = 'link';
+
+		const link = document.createElement('a');
+		link.href = imgSrc;
+		link.setAttribute('aria-label', project[key + 'capt'] || 'Project image');
 
 		const img = document.createElement('img');
 		img.src = imgSrc;
 		img.alt = project[key + 'capt'] || '';
 		img.loading = 'lazy';
 
-		wrapper.appendChild(img);
+		link.appendChild(img);
+		li.appendChild(link);
+		gallery.appendChild(li);
+	});
 
-		if (project[key + 'capt']) {
-			const caption = document.createElement('figcaption');
-			caption.textContent = project[key + 'capt'];
-			wrapper.appendChild(caption);
+	// LIGHTBOX GALLERY
+	const images = [...gallery.querySelectorAll('li img')];
+	let currentIndex = 0;
+
+	images.forEach((img, index) => {
+		img.addEventListener('click', e => {
+			e.preventDefault();
+			currentIndex = index;
+			openLightbox(img);
+		});
+	});
+	const lightbox = document.getElementById('lightbox');
+	const bg = lightbox.querySelector('.lightbox__bg');
+	const caption = lightbox.querySelector('.lightbox__caption');
+
+	let activeImg = null;
+	let originRect = null;
+
+	function openLightbox(img) {
+
+		if (!img.complete || img.naturalWidth === 0) {
+			img.onload = () => openLightbox(img);
+			return;
 		}
 
-		gallery.appendChild(wrapper);
+		originRect = img.getBoundingClientRect();
+
+		const naturalRatio = img.naturalWidth / img.naturalHeight;
+
+		const startHeight = originRect.height;
+		const startWidth = startHeight * naturalRatio;
+
+		const startLeft = originRect.left + (originRect.width - startWidth) / 2;
+		const startTop = originRect.top;
+
+		activeImg = img.cloneNode();
+		activeImg.style.position = 'fixed';
+		activeImg.style.top = startTop + 'px';
+		activeImg.style.left = startLeft + 'px';
+		activeImg.style.width = startWidth + 'px';
+		activeImg.style.height = startHeight + 'px';
+		activeImg.style.objectFit = 'contain';
+		activeImg.style.opacity = 0;
+
+		//document.body.appendChild(activeImg);
+		lightbox.appendChild(activeImg);
+
+		lightbox.style.display = 'block';
+
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+
+		let targetWidth = vw;
+		let targetHeight = vw / naturalRatio;
+
+		if (targetHeight < vh) {
+			targetHeight = vh;
+			targetWidth = vh * naturalRatio;
+		}
+
+		const centerX = vw / 2;
+		const centerY = vh / 2;
+
+		const tl = gsap.timeline();
+
+		gsap.set(caption, { opacity: 0, y: 25 });
+
+		tl.to(bg, { opacity: 1 })
+
+			.to(activeImg, {
+				autoAlpha: 1,
+				duration: 0.25
+			}, 0)
+
+			.to(activeImg, {
+				width: targetWidth,
+				height: targetHeight,
+				top: centerY - targetHeight / 2,
+				left: centerX - targetWidth / 2,
+				duration: 0.4,
+				ease: "back.inOut(1.4)"
+			}, 0.25)
+
+			.to(activeImg, {
+				width: vw * 0.9,
+				height: (vw * 0.9) / naturalRatio,
+				top: centerY - ((vw * 0.9) / naturalRatio) / 2,
+				left: centerX - (vw * 0.9) / 2,
+				duration: 0.4,
+				ease: "back.out(1.4)"
+			});
+
+		caption.textContent = img.alt || '';
+		gsap.to(caption, { opacity: 1, y: 0, duration: 0.25, delay: 1 });
+	}
+
+	lightbox.querySelector('.prev').addEventListener('click', () => {
+		navigate(-1);
 	});
+
+	lightbox.querySelector('.next').addEventListener('click', () => {
+		navigate(1);
+	});
+
+	function navigate(dir) {
+
+		const images = [...document.querySelectorAll('#projectGallery li img')];
+		const nextIndex = (currentIndex + dir + images.length) % images.length;
+		const nextImgOriginal = images[nextIndex];
+
+		if (!nextImgOriginal.complete || nextImgOriginal.naturalWidth === 0) {
+			nextImgOriginal.onload = () => navigate(dir);
+			return;
+		}
+
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+
+		const naturalRatio = nextImgOriginal.naturalWidth / nextImgOriginal.naturalHeight;
+
+		const targetWidth = vw * 0.9;
+		const targetHeight = targetWidth / naturalRatio;
+
+		const centerX = vw / 2;
+		const centerY = vh / 2;
+
+		const nextImg = nextImgOriginal.cloneNode();
+		nextImg.style.position = 'fixed';
+		nextImg.style.width = targetWidth + 'px';
+		nextImg.style.height = targetHeight + 'px';
+		nextImg.style.top = centerY - targetHeight / 2 + 'px';
+		nextImg.style.objectFit = 'contain';
+		nextImg.style.zIndex = 2;
+
+		lightbox.appendChild(nextImg);
+
+		const offset = dir === 1 ? vw : -vw;
+		nextImg.style.left = centerX - targetWidth / 2 + offset + 'px';
+
+		const tl = gsap.timeline({
+			onComplete: () => {
+				activeImg.remove();
+				activeImg = nextImg;
+				currentIndex = nextIndex;
+			}
+		});
+
+		tl.to(activeImg, {
+			left: `+=${-offset}`,
+			duration: 0.5,
+			ease: "back.inOut(1.4)"
+		}, 0)
+
+			.to(nextImg, {
+				left: centerX - targetWidth / 2,
+				duration: 0.5,
+				ease: "back.inOut(1.4)"
+			}, 0);
+
+		gsap.to(caption, { opacity: 0, y: 25, duration: 0.25 });
+		caption.textContent = nextImgOriginal.alt || '';
+		gsap.to(caption, { opacity: 1, y: 0, duration: 0.25, delay: 0.3 });
+	}
+
+	lightbox.addEventListener('click', e => {
+		if (e.target !== lightbox && !e.target.classList.contains('lightbox__bg')) return;
+		closeLightbox();
+	});
+
+	function closeLightbox() {
+
+		const images = [...document.querySelectorAll('#projectGallery li img')];
+		const originalImg = images[currentIndex];
+
+		if (!originalImg) return;
+
+		const rect = originalImg.getBoundingClientRect();
+		const naturalRatio = originalImg.naturalWidth / originalImg.naturalHeight;
+
+		const endHeight = rect.height;
+		const endWidth = endHeight * naturalRatio;
+
+		const endLeft = rect.left + (rect.width - endWidth) / 2;
+		const endTop = rect.top;
+
+		const tl = gsap.timeline({
+			onComplete: () => {
+				activeImg.remove();
+				lightbox.style.display = 'none';
+			}
+		});
+
+		tl.to(caption, { opacity: 0, y: 25, duration: 0.25 }, 0)
+
+			.to(activeImg, {
+				width: endWidth,
+				height: endHeight,
+				top: endTop,
+				left: endLeft,
+				duration: 0.4,
+				ease: "back.in(1.4)"
+			})
+
+			.to(bg, { opacity: 0, duration: 0.3 })
+
+			.to(activeImg, {
+				autoAlpha: 0,
+				duration: 0.2
+			}, "-=0.2");
+	}
+
 }
 
 function bindProjectNav() {
