@@ -678,10 +678,11 @@ function animateCloseProject() {
 
 document.querySelectorAll('.projects_ul li').forEach(li => {
 	li.addEventListener('click', e => {
-		e.preventDefault();
 		const slug = li.dataset.project;
-		if (!slug) return;
+		
+		if (!slug) return; 
 
+		e.preventDefault();
 		currentProjectSlug = slug;
 		lastScrollY = window.scrollY;
 		animateOpenProject(slug);
